@@ -1,6 +1,10 @@
 // Variable globale pour stocker l'anneau sélectionné
 let selectedDisk = null;
 
+// Variables pour la démo automatique (Étape 5)
+let demoInProgress = false;
+const DEMO_DELAY = 400; // Délai en ms entre chaque mouvement
+
 // Fonction appelée au démarrage du jeu
 function startGame() {
     const diskCount = parseInt(document.getElementById('diskCount').value);
@@ -126,8 +130,86 @@ function moveDiskToTower(targetTower) {
     selectedDisk = null;
 }
 
-// Liaison du bouton à la fonction
+// Étape 5 : Algorithme récursif des Tours de Hanoï
+function hanoi(n, from, to, aux) {
+    const moves = [];
+    
+    function hanoiHelper(n, from, to, aux) {
+        if (n === 1) {
+            moves.push({ from: from, to: to });
+        } else {
+            hanoiHelper(n - 1, from, aux, to);
+            moves.push({ from: from, to: to });
+            hanoiHelper(n - 1, aux, to, from);
+        }
+    }
+    
+    hanoiHelper(n, from, to, aux);
+    return moves;
+}
+
+// Fonction pour exécuter la démo automatique
+async function runDemo() {
+    if (demoInProgress) return;
+    
+    demoInProgress = true;
+    const demoBtn = document.getElementById('demoBtn');
+    const startBtn = document.getElementById('startBtn');
+    demoBtn.disabled = true;
+    startBtn.disabled = true;
+    demoBtn.textContent = 'Démo en cours...';
+    
+    const diskCount = parseInt(document.getElementById('diskCount').value);
+    
+    // Générer la liste des mouvements (0=Tour1, 1=Tour2, 2=Tour3)
+    const moves = hanoi(diskCount, 0, 2, 1);
+    
+    // Exécuter chaque mouvement avec un délai
+    for (const move of moves) {
+        await executeMove(move.from, move.to);
+        await new Promise(resolve => setTimeout(resolve, DEMO_DELAY));
+    }
+    
+    // Réactiver les boutons
+    demoBtn.disabled = false;
+    startBtn.disabled = false;
+    demoBtn.textContent = 'Démo automatique';
+    demoInProgress = false;
+    console.log('✓ Démo terminée ! Jeu résolu en ' + moves.length + ' mouvements.');
+}
+
+// Fonction pour exécuter un mouvement de la tour source vers la tour cible
+async function executeMove(fromIndex, toIndex) {
+    const towers = document.querySelectorAll('.tower-pole');
+    const fromTower = towers[fromIndex];
+    const toTower = towers[toIndex];
+    
+    // Récupérer l'anneau au sommet de la tour source
+    const diskToMove = fromTower.lastElementChild;
+    
+    if (diskToMove && diskToMove.classList.contains('disk')) {
+        const diskSize = parseInt(diskToMove.getAttribute('data-size'));
+        
+        // Vérifier que le mouvement est légal
+        const topDiskInTarget = toTower.lastElementChild;
+        if (topDiskInTarget && topDiskInTarget.classList.contains('disk')) {
+            const topSize = parseInt(topDiskInTarget.getAttribute('data-size'));
+            if (diskSize >= topSize) {
+                console.log('✗ Mouvement illégal détecté : anneau ' + diskSize + ' ne peut pas être placé sur ' + topSize);
+                return;
+            }
+        }
+        
+        // Effectuer le mouvement
+        toTower.appendChild(diskToMove);
+        console.log('✓ [Démo] Anneau ' + diskSize + ' déplacé vers Tour ' + (toIndex + 1));
+    }
+}
+
+// Liaison des boutons à leurs fonctions
 document.addEventListener('DOMContentLoaded', function() {
     const startBtn = document.getElementById('startBtn');
+    const demoBtn = document.getElementById('demoBtn');
     startBtn.addEventListener('click', startGame);
+    demoBtn.addEventListener('click', runDemo);
 });
