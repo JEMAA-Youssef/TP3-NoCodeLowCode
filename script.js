@@ -30,6 +30,9 @@ function generateDisks(diskCount) {
         const disk = document.createElement('div');
         disk.className = 'disk';
         disk.setAttribute('data-size', i);
+        disk.setAttribute('role', 'button');
+        disk.setAttribute('tabindex', '0');
+        disk.setAttribute('aria-label', `Anneau numéro ${i}`);
         
         // Largeur proportionnelle au numéro de l'anneau
         const width = 40 + (i * 25);
