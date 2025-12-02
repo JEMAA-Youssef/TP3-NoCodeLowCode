@@ -5,13 +5,24 @@ let selectedDisk = null;
 let demoInProgress = false;
 const DEMO_DELAY = 400; // Délai en ms entre chaque mouvement
 
+// Variables pour l'Étape 6
+let moveCounter = 0;
+let diskCount = 3;
+let gameActive = true;
+
 // Fonction appelée au démarrage du jeu
 function startGame() {
-    const diskCount = parseInt(document.getElementById('diskCount').value);
+    const diskCountInput = parseInt(document.getElementById('diskCount').value);
+    diskCount = diskCountInput;
     console.log('Jeu démarré avec ' + diskCount + ' anneaux');
     
-    // Réinitialiser l'état du jeu
+    // Réinitialiser l'état du jeu (Étape 6)
     selectedDisk = null;
+    moveCounter = 0;
+    gameActive = true;
+    updateMoveCounter();
+    updateMinMoves();
+    updatePerformance();
     
     // Étape 2 : Générer les anneaux
     generateDisks(diskCount);
@@ -106,6 +117,12 @@ function moveDiskToTower(targetTower) {
         return;
     }
     
+    // Vérifier que le jeu est actif (Étape 6)
+    if (!gameActive) {
+        console.log('⚠️ Jeu terminé. Cliquez sur "Démarrer" pour recommencer.');
+        return;
+    }
+    
     // Récupérer la taille de l'anneau sélectionné
     const selectedSize = parseInt(selectedDisk.getAttribute('data-size'));
     
@@ -124,6 +141,14 @@ function moveDiskToTower(targetTower) {
     // Le mouvement est légal : déplacer l'anneau
     targetTower.appendChild(selectedDisk);
     console.log('✓ Anneau ' + selectedSize + ' déplacé avec succès');
+    
+    // Incrémenter le compteur (Étape 6)
+    moveCounter++;
+    updateMoveCounter();
+    updatePerformance();
+    
+    // Vérifier la victoire (Étape 6)
+    checkVictory();
     
     // Désélectionner l'anneau
     selectedDisk.classList.remove('selected');
@@ -155,14 +180,22 @@ async function runDemo() {
     demoInProgress = true;
     const demoBtn = document.getElementById('demoBtn');
     const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
     demoBtn.disabled = true;
     startBtn.disabled = true;
+    resetBtn.disabled = true;
     demoBtn.textContent = 'Démo en cours...';
     
-    const diskCount = parseInt(document.getElementById('diskCount').value);
+    // Réinitialiser le jeu avant la démo
+    moveCounter = 0;
+    gameActive = true;
+    updateMoveCounter();
+    updatePerformance();
+    
+    const diskCountVal = parseInt(document.getElementById('diskCount').value);
     
     // Générer la liste des mouvements (0=Tour1, 1=Tour2, 2=Tour3)
-    const moves = hanoi(diskCount, 0, 2, 1);
+    const moves = hanoi(diskCountVal, 0, 2, 1);
     
     // Exécuter chaque mouvement avec un délai
     for (const move of moves) {
@@ -173,9 +206,17 @@ async function runDemo() {
     // Réactiver les boutons
     demoBtn.disabled = false;
     startBtn.disabled = false;
+    resetBtn.disabled = false;
     demoBtn.textContent = 'Démo automatique';
     demoInProgress = false;
+    gameActive = false;
+    
     console.log('✓ Démo terminée ! Jeu résolu en ' + moves.length + ' mouvements.');
+    
+    // Afficher le modal de victoire après la démo (Étape 6)
+    const minMoves = Math.pow(2, diskCountVal) - 1;
+    const message = 'Démo automatique terminée !\n\nCoups effectués : ' + moveCounter + '\nCoups optimal : ' + minMoves;
+    showVictoryModal(message);
 }
 
 // Fonction pour exécuter un mouvement de la tour source vers la tour cible
@@ -203,13 +244,153 @@ async function executeMove(fromIndex, toIndex) {
         // Effectuer le mouvement
         toTower.appendChild(diskToMove);
         console.log('✓ [Démo] Anneau ' + diskSize + ' déplacé vers Tour ' + (toIndex + 1));
+        
+        // Incrémenter le compteur pendant la démo (Étape 6)
+        moveCounter++;
+        updateMoveCounter();
+        updatePerformance();
+    }
+}
+
+// ===== ÉTAPE 6 : Compteur, Victoire, Score, Reset, Mode sombre =====
+
+// Fonction pour mettre à jour le compteur (Étape 6)
+function updateMoveCounter() {
+    document.getElementById('moveCounter').textContent = moveCounter;
+}
+
+// Fonction pour calculer et afficher le nombre de coups minimum (Étape 6)
+function updateMinMoves() {
+    const minMoves = Math.pow(2, diskCount) - 1;
+    document.getElementById('minMoves').textContent = minMoves;
+}
+
+// Fonction pour calculer et afficher la performance (Étape 6)
+function updatePerformance() {
+    const minMoves = Math.pow(2, diskCount) - 1;
+    let performance = '—';
+    
+    if (moveCounter > 0) {
+        const ratio = moveCounter / minMoves;
+        
+        if (ratio <= 1) {
+            performance = '🌟 Parfait !';
+        } else if (ratio <= 1.2) {
+            performance = '⭐ Excellent !';
+        } else if (ratio <= 1.5) {
+            performance = '✓ Correct';
+        } else {
+            performance = '📈 À améliorer…';
+        }
+    }
+    
+    document.getElementById('performance').textContent = performance;
+}
+
+// Fonction pour vérifier la victoire (Étape 6)
+function checkVictory() {
+    const towers = document.querySelectorAll('.tower-pole');
+    const thirdTower = towers[2];
+    
+    // Vérifier si tous les anneaux sont dans la troisième tour
+    const disksInThirdTower = thirdTower.querySelectorAll('.disk').length;
+    
+    if (disksInThirdTower === diskCount) {
+        // Victoire !
+        gameActive = false;
+        const minMoves = Math.pow(2, diskCount) - 1;
+        const message = 'Vous avez résolu le jeu en ' + moveCounter + ' coups !\n\nCoups minimum : ' + minMoves + '\nEcart : ' + (moveCounter - minMoves);
+        
+        showVictoryModal(message);
+        console.log('🎉 Victoire ! Jeu résolu en ' + moveCounter + ' coups.');
+    }
+}
+
+// Fonction pour afficher le modal de victoire (Étape 6)
+function showVictoryModal(message) {
+    const modal = document.getElementById('victoryModal');
+    const messageEl = document.getElementById('victoryMessage');
+    messageEl.textContent = message;
+    modal.classList.remove('hidden');
+}
+
+// Fonction pour fermer le modal de victoire (Étape 6)
+function closeVictoryModal() {
+    const modal = document.getElementById('victoryModal');
+    modal.classList.add('hidden');
+}
+
+// Fonction pour réinitialiser le jeu (Étape 6)
+function resetGame() {
+    selectedDisk = null;
+    moveCounter = 0;
+    gameActive = true;
+    
+    updateMoveCounter();
+    updatePerformance();
+    
+    // Réinitialiser les tours
+    document.querySelectorAll('.tower-pole').forEach(tower => {
+        tower.innerHTML = '';
+    });
+    
+    // Regénérer les anneaux dans la première tour
+    generateDisks(diskCount);
+    initializeInteractions();
+    
+    // Fermer le modal si ouvert
+    closeVictoryModal();
+    
+    console.log('✓ Jeu réinitialisé.');
+}
+
+// Fonction pour basculer le mode sombre/clair (Étape 6)
+function toggleDarkMode() {
+    const body = document.body;
+    const themeBtn = document.getElementById('themeBtn');
+    
+    body.classList.toggle('dark-mode');
+    
+    // Changer l'icône du bouton
+    if (body.classList.contains('dark-mode')) {
+        themeBtn.textContent = '☀️';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        themeBtn.textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+// Charger la préférence de thème sauvegardée (Étape 6)
+function loadThemePreference() {
+    const savedTheme = localStorage.getItem('theme');
+    const themeBtn = document.getElementById('themeBtn');
+    
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        themeBtn.textContent = '☀️';
+    } else {
+        themeBtn.textContent = '🌙';
     }
 }
 
 // Liaison des boutons à leurs fonctions
 document.addEventListener('DOMContentLoaded', function() {
     const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
     const demoBtn = document.getElementById('demoBtn');
+    const themeBtn = document.getElementById('themeBtn');
+    const victoryOkBtn = document.getElementById('victoryOkBtn');
+    
     startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', resetGame);
     demoBtn.addEventListener('click', runDemo);
+    themeBtn.addEventListener('click', toggleDarkMode);
+    victoryOkBtn.addEventListener('click', closeVictoryModal);
+    
+    // Charger la préférence de thème au démarrage (Étape 6)
+    loadThemePreference();
+    
+    // Initialiser le jeu
+    updateMinMoves();
 });

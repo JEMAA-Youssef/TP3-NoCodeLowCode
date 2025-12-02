@@ -8,13 +8,32 @@
 </head>
 <body>
     <div class="container">
-        <h1>🗼 Tours de Hanoï</h1>
+        <div class="top-bar">
+            <h1>🗼 Tours de Hanoï</h1>
+            <button id="themeBtn" class="theme-btn" aria-label="Basculer le mode sombre/clair">🌙</button>
+        </div>
         
         <div class="controls">
             <label for="diskCount">Nombre d'anneaux :</label>
             <input type="number" id="diskCount" min="1" max="10" value="3" aria-label="Nombre d'anneaux à générer">
             <button id="startBtn" aria-label="Démarrer une nouvelle partie">Démarrer</button>
+            <button id="resetBtn" aria-label="Réinitialiser la partie">Reset</button>
             <button id="demoBtn" aria-label="Lancer la démo automatique">Démo automatique</button>
+        </div>
+
+        <div class="stats-display">
+            <div class="stat">
+                <span class="stat-label">Coups :</span>
+                <span id="moveCounter" class="stat-value">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Minimum :</span>
+                <span id="minMoves" class="stat-value">7</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Performance :</span>
+                <span id="performance" class="stat-value">—</span>
+            </div>
         </div>
 
         <div class="towers" role="main" aria-label="Plateau de jeu des Tours de Hanoï">
@@ -30,6 +49,15 @@
                 <div class="tower-name">Tour 3</div>
                 <div class="tower-pole" role="button" tabindex="0" aria-label="Tour 3 - Zone de dépôt"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal de victoire (Étape 6) -->
+    <div id="victoryModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>🎉 Félicitations !</h2>
+            <p id="victoryMessage"></p>
+            <button id="victoryOkBtn" class="modal-btn">OK</button>
         </div>
     </div>
 
